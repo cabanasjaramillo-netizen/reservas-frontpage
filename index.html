@@ -1523,7 +1523,7 @@ function editBlock(desde, hasta, cabana, blocked) {
 function startDraft(date = "") {
   draft = {
     requestId:requestId(),
-    origin:"DIRECTA", cabana:"Caimán", fechaEntrada:date, fechaSalida:date ? dayAfter(date) : "",
+    origin:"DIRECTA", cabana:"Caimán", canal:"", fechaEntrada:date, fechaSalida:date ? dayAfter(date) : "",
     horaEntrada:"14:00", horaSalida:"12:00", tratamiento:"Sr.", huespedesCaiman:"", huespedesMariposa:"",
     autorizacion:false, horasExtra:"0", costoHoraExtra:"0", personasExtra:"0", costoPersonaExtra:"0",
     formaPago:"Transferencia", plataforma:"AIRBNB", pendientes:[]
@@ -1554,6 +1554,9 @@ const scheduled = () => cents(draft.anticipo || 0) + draft.pendientes.reduce((su
 
 function stayFields() {
   return field("cabana", "Cabaña", { choices:{ "Caimán":"Caimán", "Mariposa":"Mariposa", "Ambas":"Ambas" } }) +
+    (draft.origin === "DIRECTA" ? field("canal", "¿Por dónde llegó?", { choices:{
+      "":"Sin indicar", "MARKETPLACE":"Marketplace", "WHATSAPP":"WhatsApp", "INSTAGRAM":"Instagram", "OTRO":"Otro"
+    } }) : "") +
     '<div class="two">' + dateField("fechaEntrada", "Entrada") + dateField("fechaSalida", "Salida") +
     timeField("horaEntrada", "Hora de entrada") + timeField("horaSalida", "Hora de salida") + "</div>";
 }
@@ -1678,7 +1681,8 @@ async function preview(payload, summary = "", id, retrying = false) {
     emisionEnCurso = true;
     try {
       result = await call(stay ? "hospedaje.emitir" : "documento.emitir", {
-        ...(stay ? { datos:payload.datos } : payload), request_id:stay ? draft.requestId : id
+        ...(stay ? { datos:{ ...payload.datos, ...(draft.canal ? { canal:draft.canal } : {}) } } : payload),
+        request_id:stay ? draft.requestId : id
       });
     } finally {
       emisionEnCurso = false;
