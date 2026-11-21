@@ -968,6 +968,7 @@ const alertMarkup = '<p class="alert" role="alert" hidden></p>';
 let token;
 let month = fromIso(localNow().slice(0, 7) + "-01");
 let draft;
+let emisionEnCurso = false;
 let step = 0;
 let searchTimer;
 let rangeStart;
@@ -994,7 +995,6 @@ async function call(action, data) {
 
 function message(result, document = false) {
   if (document && result.code === "RED") return "Sin conexión. No se guardó nada; intenta de nuevo";
-  if (document && result.code === "FECHAS_OCUPADAS") return "Esas fechas ya están ocupadas";
   if (result.code === "DATOS_INCOMPLETOS") {
     return "Faltan datos: " + [...(result.faltantes || []), ...(result.bloqueos || [])].join(", ");
   }
@@ -1002,7 +1002,7 @@ function message(result, document = false) {
   return ({
     DOCUMENTO_NO_VIGENTE:"Este documento ya no está vigente",
     SERVICIO_NO_VIGENTE:"Este documento ya no está vigente",
-    FECHAS_OCUPADAS:"Esas noches ya están apartadas",
+    FECHAS_OCUPADAS:"Esas fechas ya están apartadas",
     ANTICIPO_REQUERIDO:"Registra el anticipo recibido",
     NO_ES_PDF:"Elige un documento en formato PDF.",
     YA_FIRMADO:"El documento ya tiene un firmado. Vuelve a abrir el expediente.",
@@ -1522,6 +1522,7 @@ function editBlock(desde, hasta, cabana, blocked) {
 
 function startDraft(date = "") {
   draft = {
+    requestId:requestId(),
     origin:"DIRECTA", cabana:"Caimán", fechaEntrada:date, fechaSalida:date ? dayAfter(date) : "",
     horaEntrada:"14:00", horaSalida:"12:00", tratamiento:"Sr.", huespedesCaiman:"", huespedesMariposa:"",
     autorizacion:false, horasExtra:"0", costoHoraExtra:"0", personasExtra:"0", costoPersonaExtra:"0",
@@ -1597,7 +1598,7 @@ function download(url, name) {
   link.click();
 }
 
-async function preview(payload, summary = "", id = requestId(), retrying = false) {
+async function preview(payload, summary = "", id, retrying = false) {
   if (!retrying) pushContext();
   else if (!payload.clave.startsWith("HOSPEDAJE_")) app.lastElementChild.remove();
   const stay = payload.clave.startsWith("HOSPEDAJE_");
@@ -1617,6 +1618,7 @@ async function preview(payload, summary = "", id = requestId(), retrying = false
   const status = view.querySelector('[role="status"]');
   const alert = view.querySelector('[role="alert"]');
   const previous = view.querySelector("#back");
+  const panelBack = view.querySelector(".back");
   const retry = view.querySelector("#retry");
   const emit = view.querySelector("#emit");
   const share = view.querySelector("#share");
@@ -1632,7 +1634,10 @@ async function preview(payload, summary = "", id = requestId(), retrying = false
     alert.focus();
   };
   previous.onclick = cjContextBack;
-  retry.onclick = () => preview(payload, summary, id, true);
+  retry.onclick = () => {
+    view.dispatchEvent(new Event("cj-dispose"));
+    preview(payload, summary, id, true);
+  };
   let result = await call("documento.vista_previa", payload);
   if (!view.isConnected) return;
   if (result.ok) result = await call("documento.descargar", { file_id:result.pdf_id });
@@ -1664,14 +1669,21 @@ async function preview(payload, summary = "", id = requestId(), retrying = false
     }
   };
   emit.onclick = async () => {
-    if (emit.disabled) return;
+    if (emit.disabled || emisionEnCurso) return;
     emit.disabled = previous.disabled = nav.inert = true;
+    if (panelBack) panelBack.disabled = true;
     alertText(alert, "");
     alertText(status, "Emitiendo el documento…");
-    const result = await call(stay ? "hospedaje.emitir" : "documento.emitir", {
-      ...(stay ? { datos:payload.datos } : payload), request_id:id
-    });
-    nav.inert = false;
+    let result;
+    emisionEnCurso = true;
+    try {
+      result = await call(stay ? "hospedaje.emitir" : "documento.emitir", {
+        ...(stay ? { datos:payload.datos } : payload), request_id:stay ? draft.requestId : id
+      });
+    } finally {
+      emisionEnCurso = false;
+      nav.inert = false;
+    }
     if (result.ok) {
       refreshCalendar();
       const folio = result.reserva || payload.reserva;
@@ -1686,10 +1698,12 @@ async function preview(payload, summary = "", id = requestId(), retrying = false
     status.hidden = true;
     if (!result.ok) {
       emit.disabled = previous.disabled = false;
+      if (panelBack) panelBack.disabled = false;
       showError(result);
       return;
     }
     view.dispatchEvent(new Event("cj-dispose"));
+    if (stay) draft = null;
     const done = screen(heading(stay ? "Contrato emitido" : "Documento emitido") +
       '<section class="card status"><div class="success-icon" aria-hidden="true">✓</div><h3>' + escape(result.folio) +
       '</h3><p class="sub">Pendientes de firma · Falta firmado</p><div class="buttons"><button class="btn">Ver reserva</button>' +
@@ -2033,7 +2047,8 @@ function renderDetail(content, r) {
   const services = (r.servicios || []).filter(service => service.estado === "EMITIDO");
   const people = r.datos?.personas || (Number(r.datos?.huespedesCaiman || 0) + Number(r.datos?.huespedesMariposa || 0)) || "No informado";
   const kv = (label, value) => '<div class="kv"><span>' + label + '</span><b>' + escape(value) + '</b></div>';
-  const amount = (label, value) => kv(label, value == null ? "No informado" : money(value));
+  const amount = (label, value) => '<div class="cj-v3-stat"><span class="sub">' + label +
+    '</span><strong>' + (value == null ? "No informado" : money(value)) + '</strong></div>';
   const docs = r.documentos || [];
   const missing = docs.some(doc => !doc.tipo.endsWith("_FIRMADO") &&
     !docs.some(signed => signed.folio === doc.folio && signed.tipo.endsWith("_FIRMADO")));
@@ -2045,11 +2060,11 @@ function renderDetail(content, r) {
     ${kv("Entrada", dateTime(r.entrada_min))}${kv("Salida", dateTime(r.salida_min))}
     ${kv("Origen", platforms[r.plataforma] || ({ DIRECTA:"Reserva directa", LEGADO:"Carga anterior", CINE_PARCIAL:"Cine parcial" })[r.origen] || r.origen || "No informado")}
     ${kv("Personas", people)}${platform && r.identificador ? kv("Identificador", r.identificador) : ""}</div>
-    <div class="card"><h3>Importes registrados</h3>${platform
+    <section class="card cj-v3-panel"><h3>Importes</h3><div class="cj-v3-payments${canceled ? " cancelled" : ""}">${platform
       ? amount("Importe bruto", r.bruto_cents) + amount("Importe neto", r.neto_cents)
       : amount("Total", r.total_cents) + amount("Recibido", received) + (canceled
         ? amount("Devolución", r.devolucion_cents ?? 0) + amount("Retenido", received - (r.devolucion_cents ?? 0))
-        : amount("Saldo", (r.total_cents ?? 0) - received))}</div>
+        : amount("Saldo", (r.total_cents ?? 0) - received))}</div></section>
     ${payments.length ? '<div class="card"><h3>Abonos</h3>' + payments.map(payment => {
       const date = payment.fecha_iso ? shortDate(payment.fecha_iso) :
         r.origen === "LEGADO" ? "fecha no informada" : dateTime(payment.fecha_min);
@@ -2165,7 +2180,8 @@ function manage(clave, title, r, service, offerRefund = false, initialDate = dra
     let name=el.name;if(!name||name==='reserva'||name==='servicio'||el.type==='submit')continue;
     if(name==='afectados[]'){if(el.checked)affected.push(el.value);continue}
     if(el.type==='radio'&&!el.checked)continue;
-    const v=String(el.value||'').trim();
+    let v=String(el.value||'').trim();
+    if (name === 'cargoModificacion') v = v || '0';
     if (!v) continue;
     if(v.includes('{')||v.includes('}'))throw new Error('DATOS_INVALIDOS: El texto no puede incluir llaves');
     let node=result;const keys=name.split('.');while(keys.length>1){const k=keys.shift();node=node[k]||(node[k]={})}node[keys[0]]=v;
@@ -2692,12 +2708,16 @@ function pushContext() {
 }
 
 function cjContextBack() {
-  if (contextIndex && !nav.inert) history.back();
+  if (contextIndex && !emisionEnCurso && !nav.inert) history.back();
 }
 
 history.replaceState({ cjContext:0 }, "");
 history.scrollRestoration = "manual";
 window.addEventListener("popstate", event => {
+  if (emisionEnCurso) {
+    history.pushState({ cjContext:contextIndex }, "");
+    return;
+  }
   const index = event.state?.cjContext;
   if (index == null || index === contextIndex) return;
   window.cjClosePicker();
@@ -2816,7 +2836,7 @@ function getPreview(tab) {
   function completeGesture(commit){
     if(!gesture)return;
     const g=gesture;gesture=null;
-    if(!stage||!track){clearStage();return}
+    if(emisionEnCurso||!stage||!track){clearStage();return}
     settling=true;
     const end=commit?(g.type==='page'?-g.direction*g.width:g.width):0;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2824,7 +2844,7 @@ function getPreview(tab) {
     track.style.transform='translate3d('+end+'px,0,0)';
     setTimeout(()=>{
       clearStage();
-      if(commit){if(g.type==='page')navigate(g.target);else cjContextBack()}
+      if(commit&&!emisionEnCurso){if(g.type==='page')navigate(g.target);else cjContextBack()}
     },reduced ? 0 : 210);
   }
 
@@ -2833,7 +2853,7 @@ function chooseContextTarget() {
   return appMain.lastElementChild?.querySelector(".doc-modal-panel,.side-panel,[data-context-preview]") || null;
 }
   document.addEventListener('touchstart',e=>{
-    if(shell.inert||nav.inert||settling||stage||e.touches.length!==1||ignoreTarget(e.target))return;
+    if(emisionEnCurso||shell.inert||nav.inert||settling||stage||e.touches.length!==1||ignoreTarget(e.target))return;
     const t=e.touches[0];
     const contextual=chooseContextTarget();
     if(contextual){
