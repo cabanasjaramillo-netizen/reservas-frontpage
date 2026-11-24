@@ -966,6 +966,7 @@ const capacities = { CAI:{ normal:14, authorized:16 }, MAR:{ normal:10, authoriz
 const alertMarkup = '<p class="alert" role="alert" hidden></p>';
 
 let token;
+let renderGoogleButton;
 let month = fromIso(localNow().slice(0, 7) + "-01");
 let draft;
 let emisionEnCurso = false;
@@ -982,6 +983,9 @@ async function call(action, data) {
       body:JSON.stringify({ accion:action, datos:data, id_token:token })
     }).then(response => response.json());
     if (!result || typeof result.ok !== "boolean") return { ok:false, code:"RESPUESTA_INVALIDA" };
+    if (!injected && (result.code === "UNAUTHENTICATED" || result.code === "FORBIDDEN")) {
+      try { localStorage.removeItem("cj-sesion"); } catch {}
+    }
     if (result.code === "UNAUTHENTICATED") {
       token = null;
       document.querySelector("dialog[open]")?.close();
@@ -994,12 +998,14 @@ async function call(action, data) {
 }
 
 function message(result, document = false) {
+  if (!result.code) result = { ...result, code:"SIN_CODIGO" };
   if (document && result.code === "RED") return "Sin conexión. No se guardó nada; intenta de nuevo";
   if (result.code === "DATOS_INCOMPLETOS") {
     return "Faltan datos: " + [...(result.faltantes || []), ...(result.bloqueos || [])].join(", ");
   }
   if (result.code === "DATOS_INVALIDOS" && result.error) return result.error;
   return ({
+    __proto__:null,
     DOCUMENTO_NO_VIGENTE:"Este documento ya no está vigente",
     SERVICIO_NO_VIGENTE:"Este documento ya no está vigente",
     FECHAS_OCUPADAS:"Esas fechas ya están apartadas",
@@ -1010,7 +1016,7 @@ function message(result, document = false) {
     NOT_FOUND:"No encontramos la reserva o el documento.",
     UNAUTHENTICATED:"Inicia sesión de nuevo para continuar.",
     RED:"Se perdió la conexión. Si estabas guardando, consulta la reserva antes de reintentar."
-  })[result.code] || "No se pudo completar la solicitud. Intenta de nuevo.";
+  })[result.code] || "No se pudo completar la solicitud (" + result.code + "). Intenta de nuevo.";
 }
 
 function heading(title, subtitle = "") {
@@ -2083,7 +2089,7 @@ function renderDetail(content, r) {
       <button class="btn small secondary" data-service="${i}" data-manage="CINE_CONVENIO_CAMBIO_TITULAR">Cambiar titular del cine</button></div>` : ""}</div>`).join("") || '<p class="sub">Sin servicios adicionales registrados.</p>'}
       ${active ? '<button class="btn secondary full" data-manage="CINE_ADICIONAL" aria-label="＋ Agregar servicio · Agregar cine adicional">＋ Agregar servicio</button>' : ""}</div>` : ""}
     <div class="card" data-expediente><h3>Expediente documental</h3><p class="sub">Los documentos emitidos y sus versiones firmadas comparten folio.</p>
-      ${documentRows(r, ongoing, true)}
+      ${documentRows(r, true, true)}
       <button class="btn secondary full" data-issued>Ver documentos emitidos</button></div>`;
   content.querySelector(".pending-chip")?.addEventListener("click", () => content.querySelector("[data-expediente]").scrollIntoView());
   content.querySelectorAll("[data-manage]").forEach(button => {
@@ -2174,7 +2180,7 @@ function manage(clave, title, r, service, offerRefund = false, initialDate = dra
    case 'CANCELACION':{
     const all = [stay && { ...stay, name:'Hospedaje' }, ...services.map(doc => ({ ...doc, name:'Cine' }))].filter(Boolean);
     return `${controls(r)}<div class="field"><label for="cancel-fecha-aviso">Fecha del aviso de cancelación</label><input type="date" id="cancel-fecha-aviso" value="${encode(now())}" ${stay ? "required" : "disabled"}></div><fieldset class="cj-contract-section"><legend>Documentos que se cancelan</legend>${all.map(d=>`<label class="cj-checkbox"><input type="checkbox" name="afectados[]" value="${encode(d.folio)}" ${offerRefund && d.folio === stay?.folio ? "checked" : ""}><span>${encode(d.name)} · ${encode(d.folio)}</span></label>`).join('')}</fieldset><p class="hint" data-release hidden></p><output id="cancel-propuesta" class="cj-contract-output"></output><button type="button" class="link" data-retry-refund hidden>Reintentar propuesta</button>${amount('Devolución acordada (MXN)','devolucion','')}
-   <span id="cancel-ajustado" hidden>Ajustado a mano</span>${amount('Saldo de liquidación (MXN)','saldoLiquidacion','0')}${fld('Motivo','motivo','textarea','',true)}${fld('Reembolsos realizados','reembolsosRealizados','textarea')}${fld('Reembolsos pendientes','reembolsosPendientes','textarea')}${fld('Observaciones','observaciones','textarea')}`;
+   <span id="cancel-ajustado" hidden>Ajustado a mano</span>${amount('Saldo de liquidación (MXN)','saldoLiquidacion','0')}${fld('Motivo','motivo','textarea','',true)}${fld('Reembolsos realizados','reembolsosRealizados','textarea','Ninguno')}${fld('Reembolsos pendientes','reembolsosPendientes','textarea')}${fld('Observaciones','observaciones','textarea')}`;
    }
    }
    return '';
@@ -2251,6 +2257,8 @@ function manage(clave, title, r, service, offerRefund = false, initialDate = dra
   let refundRequest = 0;
   let proposalReady = !stay || !notice;
   let adjustmentNote = "";
+  let refundText = "";
+  let automaticRefundText = "";
 
   function adjusted() {
     const changed = proposal != null && inputs.devolucion.value !== "" && cents(inputs.devolucion.value) !== proposal;
@@ -2258,6 +2266,10 @@ function manage(clave, title, r, service, offerRefund = false, initialDate = dra
     const next = changed ? "Monto de devolución ajustado a mano; propuesta del sistema: " + money(proposal) + "." : "";
     if (inputs.observaciones.value === adjustmentNote) inputs.observaciones.value = next;
     adjustmentNote = next;
+    if (proposal != null && inputs.devolucion.value !== "" && inputs.reembolsosPendientes.value === automaticRefundText) {
+      automaticRefundText = changed ? money(cents(inputs.devolucion.value)) + ". Método y fecha: por definir." : refundText;
+      inputs.reembolsosPendientes.value = automaticRefundText;
+    }
   }
 
   async function updateRefund() {
@@ -2283,6 +2295,9 @@ function manage(clave, title, r, service, offerRefund = false, initialDate = dra
     proposal = result.propuesta_cents;
     proposalReady = true;
     inputs.devolucion.value = (proposal / 100).toFixed(2);
+    refundText = money(proposal) + " (" + result.porcentaje + " % de " + money(result.pagado_cents) +
+      " pagados; aviso con " + result.dias + " días de anticipación). Método y fecha: por definir.";
+    adjusted();
     output.textContent = "Reembolso propuesto: " + result.porcentaje + " % de " + money(result.pagado_cents) +
       " pagados = " + money(proposal) + " (" + result.dias + " días de anticipación)";
   }
@@ -2909,6 +2924,7 @@ function showLogin(state, error) {
   login.dataset.estado = state;
   shell.inert = true;
   if (error) login.querySelector('[data-visible-en="error"] p').textContent = error;
+  if (state === "normal" || state === "sin-permiso") renderGoogleButton?.();
 }
 
 async function validateSession() {
@@ -2931,24 +2947,50 @@ if (injected) {
 } else if (!CJ_CONFIG.API_URL || !CJ_CONFIG.CLIENT_ID) {
   showLogin("error", "Falta configurar la conexión para consultar las reservas.");
 } else {
+  let savedSession;
+  try {
+    const stored = localStorage.getItem("cj-sesion");
+    savedSession = JSON.parse(stored);
+  } catch {}
+  let sessionValidation;
+  if (savedSession?.token && savedSession.exp * 1000 > Date.now() + 60000) {
+    token = savedSession.token;
+    sessionValidation = validateSession();
+  } else {
+    try { localStorage.removeItem("cj-sesion"); } catch {}
+  }
   const googleScript = document.createElement("script");
   googleScript.src = "https://accounts.google.com/gsi/client";
   googleScript.async = true;
-  googleScript.onload = () => {
+  googleScript.onload = async () => {
+    await sessionValidation;
     google.accounts.id.initialize({
       client_id:CJ_CONFIG.CLIENT_ID,
+      auto_select:true,
       callback(response) {
         token = response.credential;
+        let exp;
+        try {
+          const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+          exp = JSON.parse(atob(payload)).exp;
+        } catch {}
+        try { localStorage.setItem("cj-sesion", JSON.stringify({ token, exp })); } catch {}
         validateSession();
       }
     });
     const slot = document.querySelector("#boton-google");
-    google.accounts.id.renderButton(slot, {
+    renderGoogleButton = () => google.accounts.id.renderButton(slot, {
       theme:"outline", shape:"pill", size:"large", text:"continue_with",
       width:Math.min(360, Math.floor(slot.getBoundingClientRect().width))
     });
+    if (login.dataset.estado === "normal" || login.dataset.estado === "sin-permiso") renderGoogleButton();
+    if (!token && login.dataset.estado === "normal") {
+      try { google.accounts.id.prompt(); } catch {}
+    }
   };
-  googleScript.onerror = () => showLogin("error", "No se pudo cargar el inicio de sesión: revisa tu conexión.");
+  googleScript.onerror = () => {
+    if (!token) showLogin("error", "No se pudo cargar el inicio de sesión: revisa tu conexión.");
+  };
   document.head.append(googleScript);
 }
 </script>
