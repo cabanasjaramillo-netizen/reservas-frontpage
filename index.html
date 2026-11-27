@@ -2146,15 +2146,358 @@ window.cjDirectorConfirmBlock=function(c){const ds=cjDates(),first=cjTargets(c).
 window.cjDirectorCancelUnblock=function(){document.getElementById('confirmar-quitar-bloqueo')?.remove();confirmBlock=null};
 window.cjDirectorApplyUnblock=function(){if(!confirmBlock)return;const {c,start,end,id}=confirmBlock;window.cjDirectorLastUnblockRequest={accion:'bloqueo.quitar',datos:{bloqueo:id,confirmar:true}};for(let d=start;d<=end;d=addDay(d,1))cjTargets(c).forEach(t=>{const b=V2.blocks[t+'|'+d];if(b&&(!id||b.id===id))delete V2.blocks[t+'|'+d]});cjDirectorCancelUnblock();CJ.notice='Bloqueo retirado';render();daySheet()};
 })();
-</script><style id="extras-post-aprobacion">
+</script><style id="v31-ajustes">
+/* V3.1: solo éxito y cierres; tokens heredados de la marca. */
+:root{--v31-superficie:var(--white);--v31-texto:var(--ink);--v31-accion:#424B24;--v31-sobre-accion:#F4EFE5;--v31-borde:var(--line);--v31-papel:#FFFFFF;--v31-tinta:#1F2410;--v31-error:#A32A1B;--v31-e1:.25rem;--v31-e2:.5rem;--v31-e3:.75rem;--v31-e4:1rem;--v31-e5:1.5rem}
+html.cj-dark{--v31-accion:#E5D0AB;--v31-sobre-accion:#1F2410;--v31-error:#F0C2AE}
+section.v31-exito{position:relative;display:flex;flex-direction:column;gap:var(--v31-e4);min-width:0;max-width:100%;padding:var(--v31-e5) var(--v31-e4);background:var(--v31-superficie);color:var(--v31-texto);border:1px solid var(--v31-borde);border-radius:1rem;text-align:left;box-sizing:border-box}
+.v31-exito>*{min-width:0;max-width:100%;box-sizing:border-box}
+.v31-exito h2,.v31-exito p{margin:0;overflow-wrap:anywhere}
+.v31-exito [data-exito=folio]{padding-inline-end:3.25rem;font-size:1.25rem;line-height:1.4}
+.v31-exito [data-exito=nota]{font-size:1rem;line-height:1.5}
+.v31-exito button,.v31-exito a{font:inherit;font-size:1rem;line-height:1.4;min-height:2.75rem;min-width:2.75rem;border-radius:.75rem;touch-action:manipulation}
+.v31-exito a{color:var(--v31-accion);display:flex;align-items:center;justify-content:center;text-underline-offset:.2em}
+.v31-exito a[aria-disabled=true]{color:var(--v31-texto);cursor:default}
+.v31-exito .v31-par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v31-e2)}
+.v31-exito .v31-par>*{min-width:0;width:100%;box-sizing:border-box;white-space:normal;overflow-wrap:anywhere;padding:var(--v31-e3) var(--v31-e2);border:1px solid var(--v31-accion);background:var(--v31-accion);color:var(--v31-sobre-accion);font-weight:700}
+.v31-exito .v31-par>button:disabled{background:var(--v31-superficie);color:var(--v31-texto);border-color:var(--v31-borde);cursor:wait}
+.v31-exito [data-exito=volver],.v31-exito .v31-reintentar{width:100%;padding:var(--v31-e3);border:1px solid var(--v31-accion);background:var(--v31-superficie);color:var(--v31-accion);font-weight:600}
+.v31-exito :focus-visible,.v31-cierre:focus-visible{outline:3px solid var(--v31-accion);outline-offset:3px}
+.v31-exito [data-exito=vista]{display:grid;place-items:center;min-height:16rem;border:1px solid var(--v31-borde);border-radius:.75rem;padding:var(--v31-e4);background:var(--v31-superficie);overflow-wrap:anywhere}
+.v31-exito [data-exito=vista] iframe{width:100%;height:24rem;border:0}
+.v31-exito .v31-papel{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--v31-e3);width:100%;max-width:22rem;min-height:16rem;padding:var(--v31-e4);box-sizing:border-box;background:var(--v31-papel);color:var(--v31-tinta);border:1px solid var(--v31-borde);text-align:center}
+.v31-papel strong{font-family:Georgia,serif;font-size:1.125rem}
+.v31-exito .v31-fallo{display:flex;flex-direction:column;gap:var(--v31-e3);width:100%;color:var(--v31-error)}
+.v31-exito .v31-demo{display:flex;flex-wrap:wrap;gap:var(--v31-e2);font-size:.875rem}
+.v31-demo button{border:1px solid var(--v31-borde);padding:var(--v31-e2);background:var(--v31-superficie);color:var(--v31-texto)}
+.v31-exito .v31-aviso{font-size:.875rem;line-height:1.5}
+.v31-ventana{position:relative}
+button.v31-cierre{position:absolute;inset-block-start:var(--v31-e2);inset-inline-end:var(--v31-e2);display:flex;align-items:center;justify-content:center;min-width:2.75rem;width:2.75rem;min-height:2.75rem;height:2.75rem;margin:0;padding:0;border:1px solid var(--v31-borde);border-radius:.75rem;background:var(--v31-superficie);color:var(--v31-texto);font:inherit;font-size:1.5rem;line-height:1;cursor:pointer;touch-action:manipulation}
+.v31-ventana>.cj-contract-head{padding-inline-end:3.25rem}
+.v31-ventana>h3{padding-inline-end:3.25rem}
+#cj-contract-modal.v31-en-flujo{position:static;display:block;inset:auto;max-height:none;padding:0;background:transparent;backdrop-filter:none}
+#cj-contract-modal.v31-en-flujo>.cj-contract-panel{position:relative;width:100%;max-width:none;max-height:none;overflow:visible;margin:0;box-shadow:none;border:0;padding:var(--v31-e4)}
+
+/* Flujo compartido: usa duración, curva y umbral de la navegación v3. */
+.v31-exito [data-exito=folio]{font-family:Georgia,serif;font-weight:600}
+.v31-progreso{display:flex;gap:var(--v31-e2);padding-block:var(--v31-e4);width:100%;box-sizing:border-box}
+.v31-progreso span{flex:1;min-width:0;height:.25rem;border-radius:.25rem;background:var(--v31-borde)}
+.v31-progreso span.on{background:var(--v31-accion)}
+.v31-paso[hidden]{display:none}
+.v31-paso:not([hidden]){display:flex;flex-direction:column;gap:var(--v31-e4);min-width:0}
+.v31-pie{display:flex;flex-wrap:wrap;gap:var(--v31-e2);padding-block:var(--v31-e4)}
+.v31-pie button{flex:1;min-height:2.75rem}
+.v31-campo-error{outline:2px solid var(--v31-error);outline-offset:2px}
+.v31-error-texto{color:var(--v31-error);font-size:1rem;line-height:1.5}
+.v31-flecha{display:flex;align-items:center;justify-content:space-between;gap:var(--v31-e2)}
+.v31-flecha::after{content:'→';flex-shrink:0}
+</style>
+<script id="v31-ajustes">
+/* V3.1 — una pantalla de éxito compartida, sin conexión ni datos de clientes. */
+var v31Estado={origen:null,secuencia:0};
+var v31Pantallas=new WeakSet();
+var v31Anterior={render:render,newReservation:newReservation,v2EmitCine:v2EmitCine,cjDirectorOpen:cjDirectorOpen,cjDirectorClose:cjDirectorClose};
+function v31PantallaExito(folio,origen){
+ return `<section class="v31-exito" data-exito="pantalla" data-origen="${esc(origen)}" aria-label="Documento emitido">
+ <button type="button" class="v31-cierre" aria-label="Cerrar" onclick="v31Salir(this)">×</button>
+ <h2 data-exito="folio" tabindex="-1">${esc(folio||'Folio pendiente')}</h2>
+ <p data-exito="nota">Pendiente de firma.</p>
+ <a data-exito="abrir" href="#" onclick="v31AbrirDocumento(event,this)">Abrir en Drive</a>
+ <div data-exito="vista" aria-live="polite"></div>
+ <div class="v31-par"><button type="button" data-exito="compartir" onclick="v31CompartirDocumento(this)">Compartir</button><button type="button" data-exito="descargar" onclick="v31DescargarDocumento(this)">Descargar</button></div>
+ <button type="button" data-exito="volver" onclick="v31Salir(this)">${origen==='ficha'?'Volver a la ficha':'Volver al calendario'}</button>
+ <p class="v31-aviso" role="status" hidden></p>
+ <div class="v31-demo solo-maqueta" aria-label="Estados del PDF de prueba"><button type="button" onclick="v31EstadoPdf(this,'cargando')">Probar carga</button><button type="button" onclick="v31EstadoPdf(this,'error')">Probar error</button><button type="button" onclick="v31EstadoPdf(this,'disponible')">Ver marco</button></div>
+ </section>`;
+}
+function v31Raiz(control){return control?.matches?.('[data-exito="pantalla"]')?control:control?.closest?.('[data-exito="pantalla"]')}
+function v31EstadoPdf(control,estado){
+ const root=v31Raiz(control);if(!root)return;
+ if(!['cargando','error','disponible'].includes(estado))return;
+ root.dataset.pdfEstado=estado;
+ const vista=root.querySelector('[data-exito="vista"]');vista.setAttribute('aria-busy',String(estado==='cargando'));
+ if(estado==='cargando')vista.innerHTML='<p role="status">Cargando el PDF…</p>';
+ if(estado==='error')vista.innerHTML='<div class="v31-fallo" role="alert"><p>No se pudo cargar el PDF.</p><button type="button" class="v31-reintentar" onclick="v31ReintentarPdf(this)">Reintentar</button></div>';
+ if(estado==='disponible')vista.innerHTML='<div class="v31-papel" role="img" aria-label="Marco de vista previa del PDF"><strong>CABAÑAS JARAMILLO</strong><p>Vista previa del PDF</p><p class="solo-maqueta">Marco simulado · sin datos ni firmas</p></div>';
+ root.querySelectorAll('[data-exito="compartir"],[data-exito="descargar"]').forEach(b=>b.disabled=estado!=='disponible');
+ root.querySelector('[data-exito="abrir"]').setAttribute('aria-disabled',String(estado!=='disponible'));
+}
+function v31CargarPdf(control){
+ const root=v31Raiz(control);if(!root)return;v31Pantallas.add(root);
+ v31EstadoPdf(root,'cargando');
+ setTimeout(()=>{if(root.isConnected&&root.dataset.pdfEstado==='cargando')v31EstadoPdf(root,'disponible')},250);
+}
+function v31ReintentarPdf(control){v31CargarPdf(control)}
+function v31Avisar(control,texto){const root=v31Raiz(control);if(!root)return;const aviso=root.querySelector('.v31-aviso');aviso.hidden=false;aviso.textContent=texto}
+function v31AbrirDocumento(event,control){event.preventDefault();const root=v31Raiz(control);if(root?.dataset.pdfEstado!=='disponible')return;root.querySelector('[data-exito="vista"]').scrollIntoView({block:'nearest'});v31Avisar(control,'El PDF real se abrirá aquí al conectar el sistema.')}
+function v31CompartirDocumento(control){v31Avisar(control,'Compartir estará disponible con el PDF real.')}
+function v31DescargarDocumento(control){v31Avisar(control,'Descargar estará disponible con el PDF real.')}
+function v31Calendario(){
+ if(v31Estado.origen)cjDirectorClose();
+ if(typeof CJ!=='undefined'&&CJ.floating){CJ.floating=false;document.getElementById('cj-floating')?.remove()}
+ nav('calendar');
+}
+function v31Salir(control){if(v31Raiz(control)?.dataset.origen==='ficha')cjDirectorClose();else v31Calendario()}
+function v31MontarExito(host,folio,origen){
+ host.innerHTML=v31PantallaExito(folio,origen);
+ const root=host.querySelector('[data-exito="pantalla"]');
+ v31CargarPdf(root);root.querySelector('[data-exito="folio"]').focus({preventScroll:true});
+ return root;
+}
+render=function(){
+ if(S.tab==='new'&&S.screen==='success'&&S.type!=='platform'&&typeof CJ!=='undefined'&&CJ.floating){CJ.floating=false;document.getElementById('cj-floating')?.remove()}
+ return v31Anterior.render.apply(this,arguments);
+};
+newReservation=function(){
+ if(S.screen!=='success'||S.type==='platform'){delete S.v31Folio;return v31Anterior.newReservation.apply(this,arguments)}
+ S.step=4;
+ if(!S.v31Folio)S.v31Folio='CJ-PRUEBA-'+String(++v31Estado.secuencia).padStart(4,'0');
+ v31MontarExito(app,S.cjEmissionResult?.folio||S.v31Folio,'nueva');
+};
+v2EmitCine=function(){
+ if(Number(S.docPaid)<=0)return v31Anterior.v2EmitCine.apply(this,arguments);
+ delete S.v31Folio;S.screen='success';render();
+};
+cjDirectorOpen=function(key,resId='',service='',inline=false){
+ const ficha=document.querySelector('#sideRoot .side-panel');
+ const anterior=v31Estado.origen;
+ v31Flujo={key,paso:0,checks:[]};
+ if(!anterior)v31Estado.origen={tipo:ficha&&resId?'ficha':'pagina',resId,tab:S.tab,screen:S.screen,step:S.step,scroll:ficha?.scrollTop||0,side:document.getElementById('sideRoot')?.innerHTML||'',doc:document.getElementById('docOverlayRoot')?.innerHTML||'',pageY:scrollY};
+ const result=v31Anterior.cjDirectorOpen.apply(this,arguments);
+ const root=document.getElementById(inline?'cj-flow-page':'cj-contract-modal');
+ if(!root){v31Estado.origen=anterior;return result}
+ if(!inline){
+  root.classList.remove('cj-contract-overlay');root.classList.add('v31-en-flujo');root.onclick=null;
+  app.replaceChildren(root);
+  for(const id of ['sideRoot','docOverlayRoot']){const overlay=document.getElementById(id);if(overlay)overlay.innerHTML=''}
+  syncOverlayLock();
+ }
+ // The existing form owns the final step; no second dialog is introduced.
+ v31Actualizar();v31Animar(root,1);return result;
+};
+cjDirectorClose=function(){
+ const origin=v31Estado.origen;v31Estado.origen=null;v31Flujo=null;
+ const result=v31Anterior.cjDirectorClose.apply(this,arguments);
+ if(origin?.tipo==='ficha'){S.tab=origin.tab;S.screen=origin.screen;S.step=origin.step;render();const side=document.getElementById('sideRoot'),doc=document.getElementById('docOverlayRoot');if(side)side.innerHTML=origin.side;if(doc)doc.innerHTML=origin.doc;syncOverlayLock();requestAnimationFrame(()=>{const p=document.querySelector('#sideRoot .side-panel');if(p)p.scrollTop=origin.scroll;scrollTo(0,origin.pageY)})}
+ else if(origin){S.tab=origin.tab;S.screen=origin.screen;S.step=origin.step;if(S.screen==='docform')S.screen='choose';render()}
+ return result;
+};
+function v31CerrarVentanas(){
+ // Calendar/date controls and emission confirmations are explicitly protected.
+ const panels=document.querySelectorAll('#cj-contract-modal>.cj-contract-panel,#cj-flow-page>.card,#cj-block-modal>.cj-contract-panel,#v2modal>.v2-panel,#modalRoot .modal,#sideRoot>.side-mask>.side-panel,#docOverlayRoot .doc-modal-panel');
+ for(const panel of panels){
+  if(panel.querySelector('[data-exito="pantalla"]'))continue;
+  const title=panel.querySelector('h3')?.textContent||'';
+  if(/Confirmar emisión/.test(title))continue;
+  const buttons=[...panel.querySelectorAll('button')].filter(b=>{
+   if(b.closest('#cj-contract-modal,#cj-flow-page')&&!panel.matches('#cj-contract-modal>.cj-contract-panel,#cj-flow-page>.card'))return false;
+   const action=b.getAttribute('onclick')||'';
+   return /^Cerrar$/.test(b.textContent.trim())||/^(closeSide|closeDocOverlay|cjDirectorClose|cjDirectorCloseBlock|closeModal|v2CloseModal)\(\)/.test(action)||((b.parentElement===panel&&b.classList.contains('back'))&&/cjContextBack/.test(action));
+  });
+  if(!buttons.length)continue;
+  const close=buttons[0];buttons.slice(1).forEach(b=>b.remove());
+  if(!close.classList.contains('v31-cierre')){
+   close.className='v31-cierre';close.type='button';close.setAttribute('aria-label','Cerrar');close.textContent='×';panel.prepend(close);panel.classList.add('v31-ventana');
+  }
+ }
+ // Inline document routes had both an outer Back and an inner Close.
+ document.querySelectorAll('.cj-contract-page').forEach(p=>{if(p.querySelector('#cj-flow-page'))p.querySelector(':scope>.back')?.remove()});
+}
+function v31Actualizar(){
+ const root=document.getElementById('cj-contract-modal')||document.getElementById('cj-flow-page');
+ if(root){
+  const panel=root.firstElementChild;
+  if(panel&&root.classList.contains('v31-en-flujo')){panel.removeAttribute('role');panel.removeAttribute('aria-modal')}
+  const card=panel?.querySelector('.card.status');
+  if(card&&!card.querySelector('[data-exito="pantalla"]')){
+   const folio=card.querySelector('strong')?.textContent||'Folio pendiente';
+   v31MontarExito(panel,folio,v31Estado.origen?.tipo==='ficha'?'ficha':'nueva');
+  }
+ }
+ document.querySelectorAll('[data-exito="pantalla"]').forEach(p=>{if(!v31Pantallas.has(p))v31CargarPdf(p)});
+ v31CerrarVentanas();
+ v31FlujosActualizar();
+}
+var v31Observer=new MutationObserver(function(){v31Observer.disconnect();try{v31Actualizar()}finally{v31Observer.observe(document.body,{childList:true,subtree:true})}});
+v31Observer.observe(document.body,{childList:true,subtree:true});
+
+var v31Flujo=null;
+var v31Guardados={nextNew:nextNew,newBack:newBack,partial:partialCineNew,emit:cjDirectorEmit,edit:cjDirectorEdit,floating:cjOpenFloating,prefill:prefill};
+function v31Animar(el,direccion,rebote=false){
+ if(!el||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ el.animate(rebote?[{transform:'translateX(0)'},{transform:'translateX(-8px)'},{transform:'translateX(8px)'},{transform:'translateX(0)'}]:[{transform:`translateX(${direccion*100}%)`},{transform:'translateX(0)'}],{duration:200,easing:'cubic-bezier(.23,.8,.2,1)'});
+}
+function v31Progreso(host,paso,nombres){
+ let bar=host.querySelector(':scope>.v31-progreso');
+ if(!bar){bar=document.createElement('div');bar.className='v31-progreso';host.prepend(bar)}
+ const label=`Paso ${paso+1} de ${nombres.length}: ${nombres[paso]}`;
+ if(bar.getAttribute('aria-label')===label)return;
+ bar.setAttribute('role','group');bar.setAttribute('aria-label',label);
+ bar.innerHTML=nombres.map((n,i)=>`<span class="${i<=paso?'on':''}" ${i===paso?'aria-current="step"':''} title="${esc(n)}"></span>`).join('');
+}
+function v31Host(){return document.getElementById('cj-contract-modal')||document.getElementById('cj-flow-page')||(S.tab==='new'&&['form','success'].includes(S.screen)&&S.type!=='platform'?app:null)}
+function v31Bloquear(host,campos=[]){
+ campos.forEach(el=>{
+  el.classList.add('v31-campo-error');el.closest('.field')?.querySelector('.cj-picker-trigger')?.classList.add('v31-campo-error');el.setAttribute('aria-invalid','true');
+  const field=el.closest('.field')||el.parentElement;
+  if(!field.querySelector('.v31-error-texto')){
+   const msg=document.createElement('p');msg.className='v31-error-texto';msg.setAttribute('role','alert');
+   msg.textContent='Revisa '+(field.querySelector('label')?.textContent.trim()||'este dato')+'.';field.append(msg);
+  }
+ });
+ v31Animar(host,0,true);
+ const target=campos[0]?.closest('.field')?.querySelector('.cj-picker-trigger')||campos[0];target?.focus({preventScroll:true});
+ return false;
+}
+function v31Validar(host){
+ const campos=[...host.querySelectorAll('input,select,textarea')].filter(e=>!e.disabled&&e.type!=='hidden'&&!e.closest('[hidden]'));
+ const bad=campos.filter(e=>(e.required&&!String(e.value).trim())||!e.validity.valid);
+ if(S.tab==='new'&&!v31Flujo){
+  const required=S.type==='cine-parcial'?(S.step===0?['name','docDate','docFrom','docTo','docPeople']:S.step===1?['docTotal']:S.step===2?['docPaid','paymentDate']:[]):(S.step===0?['name','start','end','hourIn','hourOut','people']:[]);
+  for(const id of required){const e=host.querySelector('#'+id);if(e&&!String(e.value).trim())bad.push(e)}
+ }
+ if(v31Flujo?.key==='CANCELACION'&&v31Flujo.paso===0&&!host.querySelector('[name=\"afectados[]\"]:checked'))bad.push(...host.querySelectorAll('[name=\"afectados[]\"]'));
+ return bad.length?v31Bloquear(host,[...new Set(bad)]):true;
+}
+function v31Plan(key){
+ const plans={
+ CINE_PARCIAL:{names:['Datos','Total','Anticipo','Vista previa','Documento emitido'],fields:[[],['precio','condicionesPago'],['anticipo','#cine-saldo']]},
+ CINE_ADICIONAL:{names:['Fecha, horario y personas','Precio y pagos','Vista previa','Documento emitido'],fields:[[],['precio','anticipo','condicionesPago','#cine-saldo']]},
+ CONVENIO_MODIFICACION:{names:['Cambios','Importes','Vista previa','Documento emitido'],fields:[[],['nuevo.rentaTotal','cargoModificacion','fechaPagoAjuste','#mod-saldo-actualizado']]},
+ CINE_CONVENIO_MODIFICACION:{names:['Cambios','Importes','Vista previa','Documento emitido'],fields:[[],['nuevo.precio','cargoModificacion']]},
+ CANCELACION:{names:['Qué se cancela y motivo','Reembolso','Vista previa','Documento emitido'],fields:[[],['devolucion','saldoLiquidacion','reembolsosRealizados','reembolsosPendientes','#cancel-propuesta','#cancel-ajustado']]}
+ };
+ return plans[key]||{names:['Titular nuevo','Vista previa','Documento emitido'],fields:[[]]};
+}
+function v31Grupos(form){
+ if(form.dataset.v31Grupos)return;
+ form.dataset.v31Grupos='si';
+ const plan=v31Plan(form.dataset.clave);
+ const groups=plan.fields.map((_,i)=>{const g=document.createElement('div');g.className='v31-paso';g.dataset.paso=i;return g});
+ const actions=form.querySelector('.cj-contract-actions');
+ [...form.children].filter(e=>e!==actions&&e.id!=='cj-flow-error').forEach(e=>groups[0].append(e));
+ plan.fields.forEach((fields,i)=>fields.forEach(n=>{
+  const el=groups[0].querySelector(n.startsWith('#')?n:`[name="${n}"]`);
+  if(el)groups[i].append(el.closest('.field')||el);
+ }));
+ groups[0].querySelectorAll('.cj-contract-grid').forEach(g=>{if(!g.children.length)g.remove()});
+ groups.forEach(g=>form.insertBefore(g,actions));
+ const submit=actions.querySelector('button[type=submit]');submit.hidden=true;
+ actions.insertAdjacentHTML('beforeend','<button type="button" class="btn secondary" onclick="v31Paso(-1)">Atrás</button><button type="button" class="btn" onclick="v31Paso(1)">Continuar →</button>');
+ form.addEventListener('submit',e=>{
+  if(v31Flujo.paso<groups.length-1||!v31Validar(form)){e.preventDefault();e.stopImmediatePropagation();return}
+  v31Flujo.checks=[...form.querySelectorAll('input[type=checkbox]:checked')].map(e=>e.value);
+ },true);
+ form.querySelectorAll('input[type=checkbox]').forEach(e=>e.checked=v31Flujo.checks.includes(e.value));
+ form.addEventListener('change',()=>{v31Flujo.checks=[...form.querySelectorAll('input[type=checkbox]:checked')].map(e=>e.value)});
+}
+function v31FlujosActualizar(){
+ document.querySelectorAll('#sideRoot button[onclick*="cjDirectorOpen"]').forEach(b=>b.classList.add('v31-flecha'));
+ const host=v31Host();if(!host)return;
+ const final=host.querySelector('[data-exito=pantalla]');
+ if(v31Flujo){
+  const form=host.querySelector('form.cj-contract-form');
+  const names=v31Plan(v31Flujo.key).names;
+  if(form){
+   v31Grupos(form);
+   const groups=[...form.querySelectorAll('.v31-paso')];
+   const error=form.querySelector('.cj-error-field');if(error){v31Flujo.paso=Number(error.closest('.v31-paso')?.dataset.paso||0);error.classList.remove('cj-error-field');v31Bloquear(form,[error])}
+   groups.forEach((g,i)=>{if(g.hidden!==(i!==v31Flujo.paso))g.hidden=i!==v31Flujo.paso});
+  }
+  const preview=!!host.querySelector('.cj-contract-draft');
+  const step=final?names.length-1:preview?names.length-2:v31Flujo.paso;
+  v31Progreso(host,step,names);
+  host.dataset.v31Etapa=final?'final':preview?'preview':form?'form':'enviando';
+  host.querySelectorAll('.cj-contract-panel').forEach(p=>{p.removeAttribute('role');p.removeAttribute('aria-modal')});
+ }else if(S.tab==='new'){
+  host.querySelectorAll(':scope>.steps').forEach(x=>x.remove());
+  v31Progreso(host,final?4:S.step,['Datos','Total','Anticipo','Vista previa','Documento emitido']);
+  const backs=[...host.querySelectorAll('button')].filter(b=>/^(←\s*)?Atrás$/.test(b.textContent.trim()));backs.slice(1).forEach(b=>b.remove());
+ }
+}
+function v31Paso(dir){
+ const host=v31Host();if(!host)return false;
+ if(host.querySelector('[data-exito=pantalla]')||host.dataset.v31Etapa==='enviando')return v31Bloquear(host);
+ if(v31Flujo){
+  const form=host.querySelector('form.cj-contract-form');
+  if(!form){if(dir<0){v31Flujo.paso=v31Plan(v31Flujo.key).fields.length-1;v31Guardados.edit();v31Actualizar();v31Animar(host,-1);return true}return v31Bloquear(host)}
+  const count=form.querySelectorAll('.v31-paso').length;
+  if(dir<0&&v31Flujo.paso===0){cjDirectorClose();return true}
+  if(dir>0&&!v31Validar(form))return false;
+  if(dir>0&&v31Flujo.paso===count-1){form.requestSubmit(form.querySelector('button[type=submit]'));return true}
+  v31Flujo.paso+=dir;v31FlujosActualizar();v31Animar(form,dir);return true;
+ }
+ if(dir<0){if(S.step===0){v31Calendario();return true}newBack();return true}
+ if(S.step>=3)return v31Bloquear(host);
+ const before=S.step;if(S.type==='cine-parcial')nextPartialCine();else nextNew();return S.step!==before;
+}
+nextNew=function(){if(!v31Validar(app))return;const step=S.step;v31Guardados.nextNew();v31Actualizar();if(S.step!==step)v31Animar(app,1);else v31Bloquear(app)};
+newBack=function(){if(S.screen==='success')return;v31Guardados.newBack();v31Actualizar();v31Animar(app,-1)};
+partialCineNew=function(){
+ const step=S.step;S.step=step===3?2:Math.min(step,1);v31Guardados.partial();S.step=step;
+ if(step===1||step===2){
+  const remove=step===1?['docPaid','paymentDate','paymentMethod']:['docTotal'];
+  remove.forEach(id=>app.querySelector('#'+id)?.closest('.field')?.remove());
+  const title=app.querySelector('.card h3');if(title)title.textContent=step===1?'Total del servicio':'Anticipo recibido';
+ }
+ const footer=app.querySelector(':scope>.buttons');if(footer)footer.innerHTML=`${step?'<button class="btn secondary" onclick="newBack()">Atrás</button>':''}${step<3?'<button class="btn" onclick="nextPartialCine()">Continuar →</button>':''}`;
+ const sub=app.querySelector('.heading .sub');if(sub)sub.textContent='Cine con estancia parcial · '+['Datos','Total','Anticipo','Vista previa'][step];
+};
+nextPartialCine=function(){
+ if(!v31Validar(app))return;
+ if(S.step===0&&(!S.name.trim()||!S.docDate||S.docFrom>=S.docTo||Number(S.docPeople)<1))return v31Bloquear(app,[...app.querySelectorAll('#name,#docDate,#docFrom,#docTo,#docPeople')]);
+ if(S.step>=3)return;
+ S.validation=false;S.step++;render();v31Actualizar();v31Animar(app,1);
+};
+v2EmitCine=function(){
+ if(Number(S.docPaid)<=0)return v31Bloquear(app);
+ modal('Confirmar emisión','Esta maqueta simula la emisión y el bloqueo del día completo. No hay conexión ni se genera un PDF real.',[{text:'Cancelar',secondary:true,fn:'closeModal()'},{text:'Emitir',fn:"closeModal();S.screen='success';render()"}]);
+};
+cjDirectorEmit=function(){
+ const host=v31Host();if(!host?.querySelector('.cj-contract-draft'))return;
+ modal('Confirmar emisión','Se emitirá el documento definitivo. Esta maqueta solo simula la acción.',[{text:'Cancelar',secondary:true,fn:'closeModal()'},{text:'Emitir',fn:'closeModal();v31ConfirmarDocumento()'}]);
+};
+function v31ConfirmarDocumento(){v31Guardados.emit()}
+cjDirectorEdit=function(){if(!v31Flujo)return;v31Flujo.paso=0;v31Guardados.edit();v31Actualizar()};
+// All booking entry points use the existing form as a page; dates remain untouched.
+function v31PaginaReserva(){if(CJ.floating){CJ.floating=false;document.getElementById('cj-floating')?.remove();render();v31Actualizar()}}
+cjOpenFloating=function(){const result=v31Guardados.floating.apply(this,arguments);v31PaginaReserva();return result};
+prefill=function(){const result=v31Guardados.prefill.apply(this,arguments);v31PaginaReserva();return result};
+// Window capture claims only form gestures, before the unchanged v3 tab controller.
+var v31Gesto=null;
+window.addEventListener('touchstart',e=>{
+ const host=v31Host();if(!host||!host.contains(e.target)||e.touches.length!==1||innerWidth>760||e.target.closest('input,textarea,select,[contenteditable],.cj-picker-overlay')||document.querySelector('#modalRoot .modal-wrap'))return;
+ const t=e.touches[0];if(t.clientX<18)return;
+ v31Gesto={x:t.clientX,y:t.clientY,dx:0,time:performance.now(),host,horizontal:false};e.stopImmediatePropagation();
+},{capture:true,passive:true});
+window.addEventListener('touchmove',e=>{
+ const g=v31Gesto;if(!g)return;e.stopImmediatePropagation();
+ const t=e.touches[0];if(!t)return;const dx=t.clientX-g.x,dy=t.clientY-g.y;
+ if(!g.horizontal){if(Math.abs(dy)>11&&Math.abs(dy)>Math.abs(dx)*1.15){v31Gesto=null;return}if(Math.abs(dx)<12||Math.abs(dx)<Math.abs(dy)*1.2)return;g.horizontal=true}
+ g.dx=dx;if(e.cancelable)e.preventDefault();
+},{capture:true,passive:false});
+window.addEventListener('touchend',e=>{
+ const g=v31Gesto;if(!g)return;v31Gesto=null;e.stopImmediatePropagation();
+ const velocity=Math.abs(g.dx)/Math.max(50,performance.now()-g.time);
+ if(g.horizontal&&(Math.abs(g.dx)>innerWidth*.19||velocity>.45))v31Paso(g.dx>0?-1:1);
+},{capture:true,passive:true});
+window.addEventListener('touchcancel',()=>{v31Gesto=null},{capture:true,passive:true});
+v31Actualizar();
+
+document.addEventListener('input',e=>{const el=e.target;if(!el.classList?.contains('v31-campo-error'))return;if(String(el.value).trim()&&el.validity.valid){el.classList.remove('v31-campo-error');el.removeAttribute('aria-invalid');el.closest('.field')?.querySelector('.v31-error-texto')?.remove()}});
+
+var v31NavAnterior=nav;
+nav=function(){if(v31Flujo){v31Flujo=null;v31Estado.origen=null;v31Anterior.cjDirectorClose()}return v31NavAnterior.apply(this,arguments)};
+</script>
+<style id="extras-post-aprobacion">
 .solo-maqueta{display:none!important}
 .cj-v3-demo-state{display:none!important}
+.cj-mes-bloqueado{opacity:.45;filter:grayscale(.3)}
+.cj-aviso-mes{padding:.75rem 0}
+#cj-contract-modal iframe.preview[title="PDF del borrador"]:not([hidden]){width:100%;display:block;box-sizing:border-box}
 </style>
 <script id="extras-post-aprobacion">
 const cjDocumentoReal = (() => {
-  const originalNewReservation = newReservation;
-  const issuedBlocks = new WeakSet();
-
   function cjDownloadPdf(file) {
     const link = document.createElement("a");
     link.href = file.url;
@@ -2175,61 +2518,7 @@ const cjDocumentoReal = (() => {
     cjDownloadPdf(file);
   }
 
-  function cjAddIssuedPdf(card, result) {
-    const drive = card.querySelector('[onclick^="driveDemo()"]');
-    if (drive) {
-      drive.textContent = "Abrir documento ↗";
-      drive.disabled = true;
-    }
-    card.insertAdjacentHTML("beforeend", `<div data-cj-issued-pdf="${esc(result.pdf_id)}">
-      <iframe class="preview" title="PDF del documento emitido" hidden></iframe>
-      <p class="sub" role="status">Cargando el documento…</p>
-      <div class="buttons">
-        <button class="btn secondary" type="button" disabled>Compartir documento</button>
-        <button class="btn secondary" type="button" disabled>Descargar</button>
-      </div></div>`);
-  }
-
-  newReservation = function() {
-    const original = originalNewReservation.apply(this, arguments);
-    if (S.screen !== "success" || !S.cjEmissionResult) return original;
-    const result = S.cjEmissionResult;
-    const card = app.querySelector(".card.status");
-    card.querySelector("h3").textContent = result.folio || result.reserva;
-    if (result.pdf_id) {
-      card.querySelector(".sub").textContent = "Pendientes de firma · Falta firmado";
-      cjAddIssuedPdf(card, result);
-    }
-    return original;
-  };
-
-  async function cjShowIssuedPdf(block, fetchPdf, message) {
-    if (issuedBlocks.has(block)) return;
-    issuedBlocks.add(block);
-    const result = await fetchPdf(block.dataset.cjIssuedPdf);
-    if (!block.isConnected) return;
-    const status = block.querySelector('[role="status"]');
-    if (!result.ok) {
-      status.hidden = false;
-      status.textContent = message(result);
-      return;
-    }
-    const frame = block.querySelector("iframe");
-    frame.src = result.url;
-    frame.hidden = false;
-    status.hidden = true;
-    const [share, download] = block.querySelectorAll("button");
-    share.disabled = download.disabled = false;
-    share.onclick = () => cjSharePdf(result);
-    download.onclick = () => cjDownloadPdf(result);
-    const drive = block.parentElement.querySelector('[onclick^="driveDemo()"]');
-    if (drive) {
-      drive.disabled = false;
-      drive.onclick = () => window.open(result.url, "_blank", "noopener");
-    }
-  }
-
-  return { cjAddIssuedPdf, cjShowIssuedPdf, cjSharePdf, cjDownloadPdf };
+  return { cjSharePdf, cjDownloadPdf };
 })();
 </script>
 <script id="adaptador-motor">
@@ -2238,6 +2527,11 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
 // su validación y precarga, y se conecta el motor al formulario y al PDF que dibujan.
 // La propuesta de reembolso de la maqueta se sustituye por la del motor.
 // El motor no informa siempre la fecha de asociación del firmado.
+// calendario.rango informa el motivo del bloqueo en titular y omite la nota.
+// calendario.rango puede omitir el nombre de la plataforma.
+// La emisión devuelve pdf_id sin URL de Drive. Se usa la URL de archivo de ese ID.
+// v31ConfirmarDocumento delega en una emisión simulada. Se conserva su diálogo
+// y se monta el éxito v3.1 con el resultado real, sin ejecutar esa simulación.
 
 (() => {
   const loginView = document.getElementById("cj-v3-login");
@@ -2249,13 +2543,23 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   const cabinNames = { CAI:"Caimán", MAR:"Mariposa", AMB:"Ambas", CIN:"Cine parcial" };
   let sessionToken;
   let drawGoogleButton;
+  const TIEMPO_GOOGLE_MS = 10000;
+  const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
+  const GOOGLE_ERROR = "No se pudo conectar con Google. Revisa tu conexión e intenta de nuevo.";
   let submittingLock = false;
   let lockRequest;
   let calendarLoad = 0;
   const LIMITE_DETALLES = 4;
   let activeDetails = 0;
   const detailQueue = [];
-  let recordsById = new Map();
+  const cacheMeses = new Map();
+  const mesesVencidos = new Set();
+  let mesPendienteDeDibujar;
+  const cargasMes = new Map();
+  const avisoMes = document.createElement("div");
+  avisoMes.className = "cj-aviso-mes";
+  avisoMes.setAttribute("role", "status");
+  const recordsById = new Map();
   const extraReservations = new Map();
   let noticesRequest;
   let notices;
@@ -2272,6 +2576,13 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   loginError.setAttribute("role", "alert");
   if (!loginError.isConnected) loginView.append(loginError);
 
+  const retryGoogle = document.createElement("button");
+  retryGoogle.type = "button";
+  retryGoogle.className = "btn secondary";
+  retryGoogle.textContent = "Reintentar";
+  retryGoogle.hidden = true;
+  loginError.after(retryGoogle);
+
   async function call(accion, datos) {
     if (typeof window.CJ_API !== "function" && !sessionToken) return { ok:false, code:"UNAUTHENTICATED" };
     try {
@@ -2286,6 +2597,13 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
         try { localStorage.removeItem("cj-sesion"); } catch {}
         sessionToken = null;
         calendarLoad++;
+        cacheMeses.clear();
+        mesesVencidos.clear();
+        mesPendienteDeDibujar = undefined;
+        cargasMes.clear();
+        recordsById.clear();
+        extraReservations.clear();
+        detailLoads.clear();
         cjV3LoginState(result.code === "FORBIDDEN" ? "sin-permiso" : "normal");
       }
       return result;
@@ -2322,6 +2640,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     loginView.hidden = false;
     loginView.setAttribute("aria-modal", "true");
     loginError.hidden = !error;
+    retryGoogle.hidden = error !== GOOGLE_ERROR;
     if (error) loginError.textContent = error;
     if (state === "normal" || state === "sin-permiso") drawGoogleButton?.();
   };
@@ -2341,40 +2660,110 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     }
   }
 
+  const monthKey = (year, month) => localTime(Date.UTC(year, month, 1, 6) / 60000).slice(0, 7);
+
+  function requestMonth(year, month) {
+    const key = monthKey(year, month);
+    if (!cargasMes.has(key)) {
+      const monthStart = offset => Date.UTC(year, month + offset, 1, 6) / 60000;
+      const request = call("calendario.rango", { desde_min:monthStart(0), hasta_min:monthStart(1) }).then(result => {
+        if (cargasMes.get(key) !== request) return null;
+        cargasMes.delete(key);
+        if (result.ok) {
+          cacheMeses.set(key, result.recursos);
+          mesesVencidos.delete(key);
+        }
+        return result;
+      });
+      cargasMes.set(key, request);
+    }
+    return cargasMes.get(key);
+  }
+
+  function precargarVecinos() {
+    for (const offset of [-1, 1]) {
+      const key = monthKey(S.year, S.month + offset);
+      if (!cacheMeses.has(key) || mesesVencidos.has(key)) requestMonth(S.year, S.month + offset);
+    }
+  }
+
+  function invalidateMonths(start, end) {
+    for (const key of new Set([...cacheMeses.keys(), ...cargasMes.keys()])) {
+      if (start && (key < start.slice(0, 7) || key > (end ?? start).slice(0, 7))) continue;
+      mesesVencidos.add(key);
+      cargasMes.delete(key);
+    }
+  }
+
+  function hayPantallaAbierta() {
+    return !!document.querySelector("#cj-contract-modal, #cj-flow-page, .v31-en-flujo, #sideRoot .side-panel")
+      || !!document.getElementById("modalRoot")?.childElementCount;
+  }
+
+  function mostrarEstadoMes() {
+    if (hayPantallaAbierta() || S.tab !== "calendar" || S.screen !== "month") return;
+    const grid = app.querySelector(".day")?.parentElement;
+    if (!grid) return;
+    const bloqueado = !cacheMeses.has(monthKey(S.year, S.month));
+    grid.classList.toggle("cj-mes-bloqueado", bloqueado);
+    grid.toggleAttribute("inert", bloqueado);
+    if (avisoMes.hasChildNodes() && grid.previousElementSibling !== avisoMes) grid.before(avisoMes);
+  }
+
   async function loadCalendar(year, month, initial = false) {
     const sequence = ++calendarLoad;
-    const monthStart = offset => Date.UTC(year, month + offset, 1, 6) / 60000;
-    let result = await call("calendario.rango", { desde_min:monthStart(0), hasta_min:monthStart(1) });
-    let records = [];
+    const cached = cacheMeses.has(monthKey(year, month));
+    if (!hayPantallaAbierta()) avisoMes.remove();
+    if (cached) avisoMes.replaceChildren();
+    else {
+      avisoMes.innerHTML = '<span class="spinning" aria-hidden="true"></span> Cargando el mes…';
+      if (!hayPantallaAbierta() && (res.length || Object.keys(V2.blocks).length)) {
+        drawMonth([]);
+        if (S.tab === "calendar" && S.screen === "month") render();
+      }
+    }
+    mostrarEstadoMes();
+    const result = await requestMonth(year, month);
+    if (!result || sequence !== calendarLoad || S.year !== year || S.month !== month) return false;
     if (result.ok) {
-      const unique = new Map();
-      for (const group of result.recursos) {
-        for (const entry of group.ocupaciones) {
-          const key = JSON.stringify([entry.reserva, entry.codigo, entry.entrada_min]);
-          unique.set(key, entry);
-        }
+      avisoMes.replaceChildren();
+      if (hayPantallaAbierta() || S.tab !== "calendar" || S.screen !== "month") {
+        mesPendienteDeDibujar = monthKey(year, month);
+      } else {
+        mesPendienteDeDibujar = undefined;
+        drawMonth(result.recursos);
+        render();
       }
-      const details = new Map();
-      records = await Promise.all([...unique.values()].map(async entry => {
-        if (entry.estado === "CINE") return { entry, record:null };
-        if (!details.has(entry.reserva)) details.set(entry.reserva, calendarDetail(entry.reserva));
-        const record = await details.get(entry.reserva);
-        return record ? { entry, record } : null;
-      }));
-      if (records.includes(null)) result = { ok:false, code:"DETALLE_INCOMPLETO" };
+    } else {
+      const detail = document.createElement("p");
+      detail.textContent = message(result);
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "btn secondary";
+      retry.textContent = "Reintentar";
+      retry.onclick = refreshMonth;
+      avisoMes.replaceChildren("No se pudo cargar el calendario de este mes.", detail, retry);
     }
-    if (sequence !== calendarLoad || (!sessionToken && typeof window.CJ_API !== "function")) return false;
-    if (!result.ok) {
-      if (!["UNAUTHENTICATED", "FORBIDDEN"].includes(result.code)) {
-        if (initial) cjV3LoginState("error", message(result));
-        else alert(message(result));
-      }
-      return false;
+    if (initial && !hayPantallaAbierta()) {
+      if (!result.ok) render();
+      loginView.hidden = true;
+      loginView.setAttribute("aria-modal", "false");
     }
+    mostrarEstadoMes();
+    return result.ok;
+  }
 
+  function drawMonth(groups) {
+    const entries = new Map();
+    for (const group of groups) {
+      for (const entry of group.ocupaciones) {
+        entries.set(JSON.stringify([entry.reserva, entry.codigo, entry.entrada_min]), entry);
+      }
+    }
     res.length = 0;
     V2.blocks = {};
-    for (const { entry, record } of records) {
+    for (const entry of entries.values()) {
+      const record = entry.estado === "CINE" ? null : recordsById.get(entry.reserva);
       const start = localTime(entry.entrada_min);
       const end = localTime(entry.salida_min);
       const cabin = cabinNames[entry.codigo] || entry.codigo;
@@ -2391,9 +2780,6 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       if (!Object.hasOwn(cabinNames, entry.codigo)) continue;
       res.push(reservationRow(entry, record));
     }
-    recordsById = new Map(records.filter(row => row.record).map(row => [row.entry.reserva, row.record]));
-    await loadNotices();
-    return sequence === calendarLoad;
   }
 
   function reservationRow(entry, record) {
@@ -2402,7 +2788,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     const data = record?.datos || {};
     const docs = record?.documentos || [];
     const services = (record?.servicios || []).filter(item => item.estado === "EMITIDO");
-    demoServices[entry.reserva] = services.map(service => ({
+    if (record) demoServices[entry.reserva] = services.map(service => ({
       folio:service.folio, issued:true, date:service.fechaServicio,
       from:service.datos?.horaInicio, to:service.datos?.horaFin, persons:service.datos?.personas,
       amount:service.precio_cents / 100
@@ -2428,12 +2814,13 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       start:start.slice(0, 10), end:end.slice(0, 10), hourIn:start.slice(11, 16), hourOut:end.slice(11, 16),
       total:record?.total_cents == null ? null : record.total_cents / 100,
       refund:record?.devolucion_cents == null ? null : record.devolucion_cents / 100,
-      paid:received.reduce((sum, payment) => sum + payment.importe_cents, 0) / 100,
+      paid:record ? received.reduce((sum, payment) => sum + payment.importe_cents, 0) / 100 : null,
 
       people:data.personas ? Number(data.personas) : data.huespedesCaiman || data.huespedesMariposa
         ? Number(data.huespedesCaiman || 0) + Number(data.huespedesMariposa || 0) : null,
       source:record?.origen === "PLATAFORMA" ? record.plataforma || "Plataforma" :
-        ({ DIRECTA:"Directa", LEGADO:"Carga anterior" })[record?.origen],
+        ({ DIRECTA:"Directa", LEGADO:"Carga anterior" })[record?.origen] ??
+        (entry.estado === "PLATAFORMA" ? entry.plataforma || "Plataforma" : "Directa"),
       docs:docs.filter(doc => !doc.tipo.endsWith("_FIRMADO")).map(doc => ({
         id:doc.folio, name:labels[doc.tipo] || doc.tipo, pdf_id:doc.pdf_id,
         issuedAt:(doc.emitido_min ?? record.emitido_min) == null ? null :
@@ -2448,6 +2835,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
         if (noticesRequest === current) {
           notices = result;
           if (!result.ok) noticesRequest = null;
+          prepareDocumentScreens();
         }
         return result;
       });
@@ -2459,15 +2847,18 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   function loadReservation(id, reloadData = false) {
     if (!id || (!reloadData && (recordsById.has(id) || extraReservations.has(id)))) return;
     if (!detailLoads.has(id)) {
-      detailLoads.set(id, call("reserva.detalle", { reserva:id }).then(result => {
-        if (!result.ok) { alert(message(result)); return false; }
-        const row = reservationRow(result.reserva, result.reserva);
-        recordsById.set(id, result.reserva);
+      const request = calendarDetail(id).then(record => {
+        if (detailLoads.get(id) !== request || !record) return false;
+        const row = reservationRow(record, record);
+        recordsById.set(id, record);
         const index = res.findIndex(entry => entry.id === id);
         if (index >= 0) res[index] = row;
-        else extraReservations.set(id, row);
+        extraReservations.set(id, row);
         return true;
-      }).finally(() => detailLoads.delete(id)));
+      }).finally(() => {
+        if (detailLoads.get(id) === request) detailLoads.delete(id);
+      });
+      detailLoads.set(id, request);
     }
     return detailLoads.get(id);
   }
@@ -2482,7 +2873,8 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       finally { if (added) res.splice(res.indexOf(extra), 1); }
     };
     const loading = loadReservation(id);
-    return loading ? loading.then(ok => { if (ok) return drawLoaded(); }) : drawLoaded();
+    return loading ? loading.then(ok => { if (ok) return drawLoaded();
+      alert(message({ code:"DETALLE_INCOMPLETO" })); }) : drawLoaded();
   }
 
   const originalOpenRes = openRes;
@@ -2494,10 +2886,37 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   const originalDocReservation = docReservation;
 
   openRes = function(id) {
-    return withReservation(id, () => originalOpenRes.apply(this, arguments));
+    if (res.some(row => row.id === id)) return originalOpenRes.apply(this, arguments);
+    const screen = document.querySelector("#app").firstElementChild;
+    return withReservation(id, () => {
+      if (screen === document.querySelector("#app").firstElementChild) return originalOpenRes.apply(this, arguments);
+    });
   };
   detail = function() {
-    return withReservation(S.selectedRes, () => {
+    const id = S.selectedRes;
+    const loading = loadReservation(id);
+    if (loading && res.some(row => row.id === id)) {
+      originalDetail.apply(this, arguments);
+      const panel = document.querySelector("#sideRoot .side-panel");
+      if (!panel) return;
+      const status = document.createElement("p");
+      status.className = "hint";
+      status.setAttribute("role", "status");
+      status.textContent = "Cargando detalle…";
+      panel.querySelectorAll(".card, #cj-v3-financials").forEach(card => card.hidden = true);
+      panel.append(status);
+      return loading.then(ok => {
+        if (!panel.isConnected || S.selectedRes !== id) return;
+        if (ok) return detail(true);
+        status.textContent = message({ code:"DETALLE_INCOMPLETO" });
+        const retry = document.createElement("button");
+        retry.className = "btn secondary";
+        retry.textContent = "Reintentar";
+        retry.onclick = () => detail(true);
+        panel.append(retry);
+      });
+    }
+    return withReservation(id, () => {
       const result = originalDetail.apply(this, arguments);
       const panel = document.querySelector("#sideRoot .side-panel");
       const row = res.find(entry => entry.id === S.selectedRes);
@@ -2539,6 +2958,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     });
   };
   cjV3DetailExtras = function() {
+    if (!recordsById.has(S.selectedRes)) return;
     return withReservation(S.selectedRes, () => {
       const result = originalDetailExtras.apply(this, arguments);
       const payments = recordsById.get(S.selectedRes)?.pagos || [];
@@ -2574,20 +2994,29 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     return originalDocReservation.apply(this, arguments);
   };
 
-  moveMonth = async function(offset) {
-    const target = new Date(S.year, S.month + offset, 1);
-    if (await loadCalendar(target.getFullYear(), target.getMonth())) return originalMoveMonth.apply(this, arguments);
+  function refreshMonth() {
+    const { year, month } = S;
+    loadCalendar(year, month);
+    precargarVecinos();
+  }
+
+  moveMonth = function(offset) {
+    drawMonth(cacheMeses.get(monthKey(S.year, S.month + offset)) ?? []);
+    const result = originalMoveMonth.apply(this, arguments);
+    refreshMonth();
+    return result;
   };
-  today = async function() {
+  today = function() {
     const target = new Date();
-    if (await loadCalendar(target.getFullYear(), target.getMonth())) return originalToday.apply(this, arguments);
+    drawMonth(cacheMeses.get(monthKey(target.getFullYear(), target.getMonth())) ?? []);
+    const result = originalToday.apply(this, arguments);
+    refreshMonth();
+    return result;
   };
-  nav = async function(tab) {
-    if (tab === "calendar") {
-      if (!await loadCalendar(S.year, S.month)) return;
-      render();
-    }
-    return originalNav.apply(this, arguments);
+  nav = function(tab) {
+    const result = originalNav.apply(this, arguments);
+    if (tab === "calendar" && S.tab === "calendar") refreshMonth();
+    return result;
   };
 
   v2ApplyLock = async function(bloqueo, range = false, formData, control) {
@@ -2614,6 +3043,8 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       payload.request_id = lockRequest.id;
       V2.lastReason = reason;
     }
+    const oldBlock = removing && Object.values(V2.blocks).find(block => block.id === bloqueo);
+    const lockMonth = monthKey(S.year, S.month);
     submittingLock = true;
     if (control) control.disabled = true;
     try {
@@ -2623,13 +3054,15 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
         return;
       }
       lockRequest = null;
+      invalidateMonths(oldBlock?.desde || payload.desde, oldBlock?.hasta || payload.hasta);
+      if (S.tab !== "calendar" || lockMonth !== monthKey(S.year, S.month)) return;
       if (formData) cjDirectorCloseBlock();
       if (removing && control) cjDirectorCancelUnblock();
       V2.multi = false;
       v2CloseModal();
       closeSheet();
-      if (await loadCalendar(S.year, S.month)) {
-        render();
+      if (await loadCalendar(S.year, S.month) && !hayPantallaAbierta() &&
+          S.tab === "calendar" && S.screen === "month") {
         daySheet();
       }
     } finally {
@@ -2664,7 +3097,9 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   const originalDirectPreview = directPreview;
   const originalV2Preview = v2Preview;
   const originalDocForm = docForm;
-  const originalDocSuccess = docSuccess;
+  const originalNewReservation = newReservation;
+  const originalMontarExito = v31MontarExito;
+  const originalDirectorEmit = cjDirectorEmit;
   const originalDirectorClose = cjDirectorClose;
   const pdfEmitidos = new Map();
   const pendingSuccess = new Map();
@@ -2766,19 +3201,10 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   function schedulePreviews() {
     prepareDocumentScreens();
     restoreEmission();
-    const liveRoots = [app, document.getElementById("cj-floating"), document.getElementById("cj-contract-modal")];
-    for (const region of liveRoots.filter(Boolean)) {
+    const liveRoots = new Set([app, document.getElementById("cj-floating"), directorRoot()]);
+    for (const region of [...liveRoots].filter(Boolean)) {
       for (const total of region.querySelectorAll(".card > .sub")) {
         if (total.textContent === "Valores ficticios de demostración.") total.textContent = "Captura los importes de la estancia.";
-      }
-      for (const block of region.querySelectorAll("[data-cj-issued-pdf]")) {
-        cjDocumentoReal.cjShowIssuedPdf(block, id => {
-          if (!pdfEmitidos.has(id)) pdfEmitidos.set(id, fetchPdf(id).then(result => {
-            if (!result.ok) pdfEmitidos.delete(id);
-            return result;
-          }));
-          return pdfEmitidos.get(id);
-        }, message);
       }
       for (const paper of region.querySelectorAll("#v2print, .cj-contract-draft .cj-contract-pre")) {
         if (previewNodes.has(paper)) continue;
@@ -2816,9 +3242,18 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       }
     }
   }
-  new MutationObserver(schedulePreviews).observe(document.body, { childList:true, subtree:true });
+  new MutationObserver(() => {
+    if (mesPendienteDeDibujar === monthKey(S.year, S.month) &&
+        S.tab === "calendar" && S.screen === "month" && !hayPantallaAbierta()) {
+      mesPendienteDeDibujar = undefined;
+      drawMonth(cacheMeses.get(monthKey(S.year, S.month)));
+      render();
+    }
+    mostrarEstadoMes();
+    schedulePreviews();
+  }).observe(document.body, { childList:true, subtree:true });
 
-  const directorRoot = () => document.querySelector("#cj-contract-modal, #cj-flow-page");
+  const directorRoot = () => v31Host() || document.querySelector("#cj-contract-modal, #cj-flow-page");
   const emissionScreen = payload => JSON.stringify([payload.clave, payload.reserva || "", payload.servicio || ""]);
   const reservationScreen = () => JSON.stringify([S.type, S.cabin, S.start, S.end, S.platformId || ""]);
   function showEmission(screen, pending, target) {
@@ -2826,10 +3261,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     pending.onSuccess(pending.result, target);
     pendingRequests.delete(pending.key);
     loadNotices(true);
-    return loadCalendar(S.year, S.month).then(loaded => {
-      if (loaded && S.tab === "calendar" &&
-          !document.querySelector("#cj-contract-modal, #sideRoot .side-panel")) render();
-    });
+    return loadCalendar(S.year, S.month);
   }
 
   function restoreEmission() {
@@ -2867,6 +3299,22 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
         } else if (!button || button.isConnected) alert(message(result));
         return;
       }
+      const id = result.reserva || payload.reserva;
+      const row = res.find(entry => entry.id === id) || extraReservations.get(id);
+      const start = payload.datos?.fechaEntrada || payload.datos?.fechaServicio ||
+        (payload.entrada_min != null ? localTime(payload.entrada_min).slice(0, 10) : row?.start);
+      const end = payload.datos?.fechaSalida ||
+        (payload.salida_min != null ? localTime(payload.salida_min).slice(0, 10) : row?.end || start);
+      invalidateMonths(start, end);
+      if (payload.datos?.nuevo?.fechaEntrada || payload.datos?.nuevo?.fechaSalida || payload.datos?.nuevo?.fechaServicio) {
+        const next = payload.datos.nuevo;
+        invalidateMonths(next.fechaEntrada || next.fechaServicio || row?.start, next.fechaSalida || next.fechaServicio || row?.end);
+      }
+      if (id) {
+        detailLoads.delete(id);
+        recordsById.delete(id);
+        extraReservations.delete(id);
+      }
       const pending = { result, onSuccess, key };
       pendingSuccess.set(screen, pending);
       if ((!button || button.isConnected) && (!flowRoot || flowRoot.isConnected)) await showEmission(screen, pending, flowRoot);
@@ -2880,6 +3328,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   function reservationSuccess(result) {
     closeModal();
     S.cjEmissionResult = result;
+    S.v31Folio = result.folio;
     S.screen = "success";
     render();
   }
@@ -2934,21 +3383,91 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     }
   };
 
+  newReservation = function() {
+    const { cjEmissionResult: issued } = S;
+    if (S.screen === "success" && S.type !== "platform" && issued) {
+      S.step = 4;
+      v31MontarExito(app, issued.folio, "nueva", issued);
+      return;
+    }
+    const result = originalNewReservation.apply(this, arguments);
+    if (S.screen === "success" && S.type === "platform" && S.cjEmissionResult) {
+      const title = app.querySelector(".card.status h3");
+      if (title) title.textContent = S.cjEmissionResult.folio || S.cjEmissionResult.reserva;
+    }
+    return result;
+  };
+
+  v31MontarExito = function(host, folio, origen, issued) {
+    const successView = originalMontarExito.call(this, host, folio, origen);
+    successView.querySelector('[data-exito="folio"]').textContent = issued?.folio || folio;
+    successView.cjIssued = issued;
+    if (issued?.pdf_id) {
+      const url = new URL("//drive.google.com/file/d/" + encodeURIComponent(issued.pdf_id) + "/view", GOOGLE_SCRIPT).href;
+      successView.cjDriveUrl = url;
+      successView.querySelector('[data-exito="abrir"]').setAttribute("href", url);
+      v31CargarPdf(successView);
+    }
+    return successView;
+  };
+
+  v31CargarPdf = async function(control) {
+    const successView = v31Raiz(control);
+    const id = successView?.cjIssued?.pdf_id;
+    if (!id) return;
+    v31Pantallas.add(successView);
+    v31EstadoPdf(successView, "cargando");
+    if (!pdfEmitidos.has(id)) pdfEmitidos.set(id, fetchPdf(id).then(result => {
+      if (!result.ok) pdfEmitidos.delete(id);
+      return result;
+    }));
+    const result = await pdfEmitidos.get(id);
+    if (!successView.isConnected) return;
+    if (!result.ok) {
+      v31EstadoPdf(successView, "error");
+      return;
+    }
+    successView.cjPdf = result;
+    v31EstadoPdf(successView, "disponible");
+    const view = successView.querySelector('[data-exito="vista"]');
+    const frame = view.matches("iframe") ? view : document.createElement("iframe");
+    frame.className = view.matches("iframe") ? view.className : "preview";
+    frame.title = "Documento emitido";
+    frame.src = result.url;
+    if (frame !== view) view.replaceChildren(frame);
+  };
+
+  v31ReintentarPdf = function(control) { return v31CargarPdf(control); };
+  v31AbrirDocumento = function(event, control) {
+    event.preventDefault();
+    const successView = v31Raiz(control);
+    if (successView?.dataset.pdfEstado === "disponible" && successView.cjDriveUrl) window.open(successView.cjDriveUrl, "_blank", "noopener");
+  };
+  v31CompartirDocumento = function(control) {
+    const file = v31Raiz(control)?.cjPdf;
+    if (file) return cjDocumentoReal.cjSharePdf(file);
+  };
+  v31DescargarDocumento = function(control) {
+    const file = v31Raiz(control)?.cjPdf;
+    if (file) cjDocumentoReal.cjDownloadPdf(file);
+  };
+
   function directorSuccess(result, flowRoot) {
-    const panel = flowRoot.firstElementChild;
-    const card = document.createElement("div");
-    card.className = "card status";
-    card.innerHTML = `<div class="success-icon">✓</div><h3>Documento emitido</h3><strong>${esc(result.folio)}</strong>
-      <p class="sub">Pendientes de firma · Falta firmado</p>
-      <div class="cj-contract-actions"><button class="btn" onclick\x3d"cjDirectorPending()">Ver Pendientes de firma</button>
-      <button class="btn secondary" onclick\x3d"cjDirectorClose()">Cerrar</button></div>`;
-    while (panel.children.length > 1) panel.lastElementChild.remove();
-    panel.append(card);
-    panel.querySelector(".eyebrow").textContent = "EMITIDO";
-    cjDocumentoReal.cjAddIssuedPdf(card, result);
+    const draft = flowRoot.querySelector(".cj-contract-draft, .cj-contract-form");
+    if (!draft) return;
+    const host = document.createElement("div");
+    draft.replaceWith(host);
+    v31MontarExito(host, result.folio, v31Estado.origen?.tipo === "ficha" ? "ficha" : "documento", result);
   }
 
   cjDirectorEmit = function() {
+    const result = originalDirectorEmit.apply(this, arguments);
+    const text = document.querySelector("#modalRoot p");
+    if (text?.textContent.includes("Esta maqueta solo simula")) text.textContent = "Se emitirá el documento definitivo.";
+    return result;
+  };
+
+  v31ConfirmarDocumento = function() {
     const flowRoot = directorRoot();
     const paper = flowRoot?.querySelector(".cj-contract-pre");
     if (!paper) return;
@@ -2963,7 +3482,7 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
     document.getElementById("cj-v3-signed")?.scrollIntoView({ behavior:"smooth" });
   };
   cjDirectorClose = function() {
-    const issued = directorRoot()?.querySelector("[data-cj-issued-pdf]");
+    const issued = directorRoot()?.querySelector('[data-exito="pantalla"]');
     const result = originalDirectorClose.apply(this, arguments);
     if (issued && S.selectedRes && document.querySelector("#sideRoot .side-panel")) {
       const id = S.selectedRes;
@@ -3237,12 +3756,8 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   };
 
   docSuccess = function() {
-    if (!S.cjDocumentResult) return;
-    originalDocSuccess.apply(this, arguments);
-    const card = app.querySelector(".card.status");
-    card.querySelector("h3").textContent = S.cjDocumentResult.folio;
-    card.querySelector(".sub").textContent = "Documento emitido correctamente.";
-    cjDocumentoReal.cjAddIssuedPdf(card, S.cjDocumentResult);
+    const result = S.cjDocumentResult;
+    if (result) v31MontarExito(app, result.folio, "documento", result);
   };
 
   toggleUpload = function(id) {
@@ -3424,10 +3939,10 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
       if (!["UNAUTHENTICATED", "FORBIDDEN"].includes(result.code)) cjV3LoginState("error", message(result));
       return;
     }
-    if (!await loadCalendar(S.year, S.month, true)) return;
-    render();
-    loginView.hidden = true;
-    loginView.setAttribute("aria-modal", "false");
+    const loading = loadCalendar(S.year, S.month, true);
+    precargarVecinos();
+    loadNotices();
+    await loading;
   }
 
   let savedSession;
@@ -3443,39 +3958,54 @@ var CJ_CONFIG = { API_URL: "https://script.google.com/macros/s/AKfycbzH9tlK5Inzb
   } else if (!CJ_CONFIG.API_URL || !CJ_CONFIG.CLIENT_ID) {
     cjV3LoginState("error", "Falta configurar la conexión para consultar las reservas.");
   } else {
-    const validation = sessionToken ? validateSession() : cjV3LoginState("normal");
-    const googleScript = document.createElement("script");
-    googleScript.src = "https://accounts.google.com/gsi/client";
-    googleScript.async = true;
-    googleScript.onload = async () => {
-      await validation;
-      google.accounts.id.initialize({
-        client_id:CJ_CONFIG.CLIENT_ID,
-        auto_select:true,
-        callback(response) {
-          sessionToken = response.credential;
-          let exp;
-          try {
-            const payload = sessionToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-            exp = JSON.parse(atob(payload)).exp;
-          } catch {}
-          try { localStorage.setItem("cj-sesion", JSON.stringify({ token:sessionToken, exp })); } catch {}
-          validateSession();
+    const validation = sessionToken ? validateSession() : null;
+    const loadGoogle = () => {
+      if (!sessionToken) cjV3LoginState("cargando");
+      const googleScript = document.createElement("script");
+      const failed = async () => {
+        clearTimeout(timeout);
+        googleScript.onload = googleScript.onerror = null;
+        googleScript.remove();
+        await validation;
+        if (!sessionToken) cjV3LoginState("error", GOOGLE_ERROR);
+      };
+      const timeout = setTimeout(failed, TIEMPO_GOOGLE_MS);
+      if (navigator.onLine === false) return failed();
+      googleScript.src = GOOGLE_SCRIPT;
+      googleScript.async = true;
+      googleScript.onload = async () => {
+        clearTimeout(timeout);
+        if (!window.google?.accounts?.id) return failed();
+        await validation;
+        google.accounts.id.initialize({
+          client_id:CJ_CONFIG.CLIENT_ID,
+          auto_select:true,
+          callback(response) {
+            sessionToken = response.credential;
+            let exp;
+            try {
+              const payload = sessionToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+              exp = JSON.parse(atob(payload)).exp;
+            } catch {}
+            try { localStorage.setItem("cj-sesion", JSON.stringify({ token:sessionToken, exp })); } catch {}
+            validateSession();
+          }
+        });
+        drawGoogleButton = () => google.accounts.id.renderButton(googleSlot, {
+          theme:"outline", shape:"pill", size:"large", text:"continue_with",
+          width:Math.min(360, Math.floor(googleSlot.getBoundingClientRect().width))
+        });
+        if (!loginView.hidden && !sessionToken && loginView.dataset.estado === "cargando") cjV3LoginState("normal");
+        else if (!loginView.hidden && ["normal", "sin-permiso"].includes(loginView.dataset.estado)) drawGoogleButton();
+        if (!sessionToken && loginView.dataset.estado === "normal") {
+          try { google.accounts.id.prompt(); } catch {}
         }
-      });
-      drawGoogleButton = () => google.accounts.id.renderButton(googleSlot, {
-        theme:"outline", shape:"pill", size:"large", text:"continue_with",
-        width:Math.min(360, Math.floor(googleSlot.getBoundingClientRect().width))
-      });
-      if (!loginView.hidden && ["normal", "sin-permiso"].includes(loginView.dataset.estado)) drawGoogleButton();
-      if (!sessionToken && loginView.dataset.estado === "normal") {
-        try { google.accounts.id.prompt(); } catch {}
-      }
+      };
+      googleScript.onerror = failed;
+      document.head.append(googleScript);
     };
-    googleScript.onerror = () => {
-      if (!sessionToken) cjV3LoginState("error", "No se pudo cargar el inicio de sesión: revisa tu conexión.");
-    };
-    document.head.append(googleScript);
+    retryGoogle.onclick = loadGoogle;
+    loadGoogle();
   }
 })();
 </script>
